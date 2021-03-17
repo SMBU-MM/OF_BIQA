@@ -26,46 +26,6 @@ class FocalBCELoss(torch.nn.Module):
         else:
             return focal_loss.sum()
 
-class VAT(torch.nn.Module):
-    def __init__(self, netF, netQ):
-        super(VAT, self).__init__()
-        self.n_power = 1
-        self.XI = 1e-6
-        self.netF = netF
-        self.netQ = netQ
-        self.epsilon = 1e-6
-        self.fidelity_loss = torch.nn.MSELoss().cuda()
-
-    def forward(self, X, y_hat):
-        vat_loss = self.virtual_adversarial_loss(X, y_hat)
-        return vat_loss
-
-    def get_normalized_vector(self, d):
-        return F.normalize(d.view(d.size(0), -1), p=2, dim=1).reshape(d.size())
-
-    def generate_virtual_adversarial_perturbation(self, x, y_hat):
-        d = torch.randn_like(x).cuda()
-        for _ in range(self.n_power):
-            d = self.XI * self.get_normalized_vector(d).requires_grad_()
-            # 改成IQA
-            y_m,_,_ = self.netQ(self.netF(x+d))
-            #_, y_m = self.model(x + d)
-            dist = self.fidelity_loss(y_hat, y_m)
-            grad = torch.autograd.grad(dist, [d])[0]
-            d = grad.detach()
-
-        return self.get_normalized_vector(d)
-
-    def virtual_adversarial_loss(self, x, y_hat):
-        r_vadv = self.generate_virtual_adversarial_perturbation(x, y_hat)
-        # 改成IQA
-        #_, logit_m = self.model(x + r_vadv)
-        y_m,_,_ = self.netQ(self.netF(x + r_vadv))
-        # 
-        loss = self.fidelity_loss(y_hat, y_m)
-        return loss
-
-
 class Binary_Loss(torch.nn.Module):
 
     def __init__(self):
