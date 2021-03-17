@@ -2,46 +2,13 @@
 """
 Created on Fri Sep  4 13:26:23 2020
 
-@author: Administrator
+@author: Zhihua WANG
 """
 import torch
 import math
 import torch.nn as nn
 from torch.nn import init
 import torch.nn.functional as F
-
-class SpatialPyramidPooling2d(torch.nn.Module):
-    def __init__(self, num_levels=3, pool_type='ave_pool'):
-        super(SpatialPyramidPooling2d, self).__init__()
-        self.num_levels = num_levels
-        self.pool_type = pool_type
-    def forward(self, x):
-        # num:样本数量 c:通道数 h:高 w:宽
-        # num: the number of samples
-        # c: the number of channels
-        # h: height
-        # w: width
-        num, c, h, w = x.size()
-        for i in range(self.num_levels):
-            level = i+1
-            '''
-            The equation is explained on the following site:
-            http://www.cnblogs.com/marsggbo/p/8572846.html#autoid-0-0-0
-            '''
-            kernel_size = (math.ceil(h / level), math.ceil(w / level))
-            stride = (math.ceil(h / level), math.ceil(w / level))
-            pooling = (math.floor((kernel_size[0]*level-h+1)/2), math.floor((kernel_size[1]*level-w+1)/2))
-            # 选择池化方式
-            if self.pool_type == 'max_pool':
-                tensor = F.max_pool2d(x, kernel_size=kernel_size, stride=stride, padding=pooling).view(num, -1)
-            else:
-                tensor = F.avg_pool2d(x, kernel_size=kernel_size, stride=stride, padding=pooling).view(num, -1)
-            # 展开、拼接
-            if i == 0:
-                x_flatten = tensor.view(num, -1)
-            else:
-                x_flatten = torch.cat((x_flatten, tensor.view(num, -1)), 1)
-        return x_flatten
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
@@ -216,20 +183,6 @@ class ReverseLayerF(torch.autograd.Function):
         output = grad_output.neg() * ctx.alpha
         return output, None
     
-# class net_quality(nn.Module):
-#     # end-to-end unsupervised image quality assessment model
-#     def __init__(self):
-#         super(net_quality, self).__init__()
-#         self.fc = nn.Linear(512*512, 6, bias=True)
-#         self.fc.apply(weights_init)
-
-#     def forward(self, x):
-#         mean = self.fc(x)
-#         # mean = r[:, 0].unsqueeze(dim=-1)
-#         var = torch.ones(mean.shape[0], mean.shape[1]).cuda()
-#         # var = torch.exp(r[:, 1]).unsqueeze(dim=-1)
-#         return mean
-
 class net_quality(nn.Module):
     # end-to-end unsupervised image quality assessment model
     def __init__(self):
@@ -300,72 +253,3 @@ class net_domain(nn.Module):
         x = ReverseLayerF.apply(x, alpha)
         domain = self.net(x)
         return domain.view(-1,1).squeeze(1)
-
-# class net_pixel(nn.Module):
-#     def __init__(self, context=False):
-#         super(net_pixel, self).__init__()
-#         # layers = [nn.Conv2d(64, 32, kernel_size=1, stride=1, padding=0, bias=False),
-#         #           nn.ReLU(),
-#         #           nn.Conv2d(32, 16, kernel_size=1, stride=1, padding=0, bias=False),                    
-#         #           nn.ReLU(),
-#         #           nn.Conv2d(16, 1, kernel_size=1, stride=1, padding=0, bias=False),
-#         #           nn.Sigmoid()
-#         #         ]
-#         self.spp = SpatialPyramidPooling2d()
-        
-#         layers = [nn.Linear(14*64, 32, bias=True),
-#                   nn.ReLU(),
-#                   nn.Linear(32, 16, bias=True),
-#                   nn.ReLU(),
-#                   nn.Linear(16, 1, bias=True),
-#                   nn.Sigmoid()]
-#         self.net = nn.Sequential(*layers)
-#         self.net.apply(weights_init)
-#         # self.conv1 = nn.Conv2d(64, 32, kernel_size=1, stride=1,
-#         #           padding=0, bias=False)
-#         # self.conv2 = nn.Conv2d(32, 16, kernel_size=1, stride=1,
-#         #                        padding=0, bias=False)
-#         # self.conv3 = nn.Conv2d(16, 1, kernel_size=1, stride=1,
-#         #                        padding=0, bias=False)
-#         # self.context = context
-#         # self._init_weights()
-        
-#     def forward(self, x, alpha):
-#         x = self.spp(x)
-#         x = x.view(x.size(0), -1)
-#         # x = ReverseLayerF.apply(x, alpha)
-#         return self.net(x)
-
-class net_domain_combine(nn.Module):
-    def __init__(self):
-        super(net_domain_combine, self).__init__()
-        # Dimension Reduction - feature
-        layers = [
-                    nn.Linear(512*2, 256, bias=True),
-                    nn.ReLU(),
-                    nn.Linear(256, 128, bias=True),
-                    nn.ReLU(),
-                    nn.Linear(128, 1, bias=True),
-                    nn.Sigmoid()
-                ]
-        self.net = nn.Sequential(*layers)
-        self.net.apply(weights_init)
-        
-    def forward(self, x, alpha):
-        x = ReverseLayerF.apply(x, alpha)
-        domain = self.net(x)
-        return domain.view(-1,1).squeeze(1)
-    
-# if __name__ == '__main__':
-#     # print(resnet18(pretrained=False))
-#     # print(net_quality())
-#     # print(net_domain())
-    
-#     netF = resnet18(pretrained=False)
-#     netP = net_pixel()
-#     netD = net_domain()
-    
-#     x = torch.randn(1,3,384,384)
-#     f, lf = netF(x)
-    
-#     print(netP(lf, 1).view(-1).shape)
