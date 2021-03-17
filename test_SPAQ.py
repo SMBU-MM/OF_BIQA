@@ -4,8 +4,6 @@ Created on Wed Mar  3 01:35:41 2021
 
 @author: Zhihua WANG
 """
-
-
 import torch
 import torch.nn as nn
 from PIL import Image
