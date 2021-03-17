@@ -55,9 +55,9 @@ class Trainer(object):
         self.test_batch_size = 1
 
         if self.config.voting == True:
-            train_txt = 'train_pair_voting_binary_koniq_1.txt'
+            train_txt = 'train_pair_koniq_voting.txt'
         else:
-            train_txt = 'train_pair_no_voting_binary_spaq_2.txt'
+            train_txt = 'train_pair_koniq_novoting.txt'
         self.train_batch_size = config.batch_size
         self.test_batch_size = 1
 
@@ -152,8 +152,7 @@ class Trainer(object):
 
         self.writer = SummaryWriter(self.config.runs_path)
         self.netF = nn.DataParallel(netF(pretrained=False).cuda())
-        self.netF.load_state_dict(torch.load('MNL_DA-00009.pt')['netF_dict'])
-
+        self.netF.load_state_dict(torch.load('MNL_DA-00008.pt')['netF_dict'])
         # fix the param of netF
         if self.config.fc == True:
             for name, para in self.netF.named_parameters():
@@ -166,21 +165,18 @@ class Trainer(object):
                 para.requires_grad=True
         
         self.netQ = nn.DataParallel(netQ().cuda())
-        self.netQ.load_state_dict(torch.load('MNL_DA-00009.pt')['netQ_dict'])
+        self.netQ.load_state_dict(torch.load('MNL_DA-00008.pt')['netQ_dict'])
 
         self.netD = nn.DataParallel(netD()).cuda()
         self.netA = nn.DataParallel(netA()).cuda()
-        #self.netA.load_state_dict(torch.load('MNL_DA-00009.pt')['netA_dict'])
         # loss function
         self.bin_fn = Binary_Loss().cuda()
         self.bce_fn = FocalBCELoss(gamma=self.config.gamma).cuda()
-        # self.vat_fn = VAT(self.netF, self.netQ)
-        # self.writer.add_graph(self.netD)
         print(self.netF, self.netQ, self.netD, self.netA)
         self.save_prefix = "MNL_DA"
         # oracle's log variance
-        self.sensitivity = torch.load('MNL_DA-00009.pt')['sensitivity']
-        self.specificity = torch.load('MNL_DA-00009.pt')['specificity']
+        self.sensitivity = torch.load('MNL_DA-00008.pt')['sensitivity']
+        self.specificity = torch.load('MNL_DA-00008.pt')['specificity']
         self.initial_lr = self.config.lr
         if self.initial_lr is None:
             lr = 0.0005
@@ -220,20 +216,7 @@ class Trainer(object):
                                              step_size=self.config.decay_interval,
                                              gamma=self.config.decay_ratio)
 
-    def fit(self):
-        # srcc, plcc = self.eval()
-        # with open(os.path.join(self.config.result_path, 'baseline.txt'), 'w') as txt_file:
-        #     tb = pt.PrettyTable()
-        #     tb.field_names = ["SRCC", "LIVE", "CSIQ", "TID2013", "KADID10K", "SPAQ", "KONIQ"]
-        #     tb.add_row(['Ours', srcc['live'], srcc['csiq'], srcc['tid2013'], \
-        #                     srcc['kadid'], srcc['spaq'], srcc['koniq']])
-        #     tb.add_row(["PLCC", "LIVE", "CSIQ", "TID2013", "KADID10K", "SPAQ", "KONIQ"])
-           
-        #     tb.add_row(['Ours', plcc['live'], plcc['csiq'], plcc['tid2013'], \
-        #                 plcc['kadid'], plcc['spaq'], plcc['koniq']])
-        #     print(tb)
-        #     txt_file.write(str(tb))
-                   
+    def fit(self):        
         for epoch in range(self.start_epoch, self.max_epochs):
             _ = self._train_single_epoch(epoch)
 
@@ -293,7 +276,6 @@ class Trainer(object):
             ############################################################################################
             y1, y1_var, _, _ = self.netQ(feats_x1)
             y2, y2_var, _, _ = self.netQ(feats_x2)
-
             # the loss of quality prediction
             y_diff = y1 - y2
             # var = torch.ones(y1.shape[0], y1.shape[1]).cuda()
@@ -305,7 +287,6 @@ class Trainer(object):
             #############################################################################################
             c1 = self.netA(torch.cat([feats_x1, feats_x2], dim=1))
             self.loss_c = self.bce_fn(c1.view(-1), vot.view(-1).to(torch.float32).detach())
-            
             #############################################################################################
             # Domain discriminator loss
             #############################################################################################
@@ -322,22 +303,8 @@ class Trainer(object):
             alpha = 2. / (1. + np.exp(-10 * tp)) - 1
             domain_preds = self.netD(feats_combined, alpha)
             self.loss_d = self.bce_fn(domain_preds.view(-1), domain_labels.view(-1))
-
             #############################################################################################
-            # feature-level mixup 
-            #############################################################################################
-            # mix_ratio = np.random.beta(self.config.beta, self.config.beta)
-            # mix_ratio = round(mix_ratio, 2)
-            # if (mix_ratio >= 0.5 and mix_ratio < (0.5 + self.config.clip_thr)):
-            #     mix_ratio = 0.5 + self.config.clip_thr
-            # if (mix_ratio > (0.5 - self.config.clip_thr) and mix_ratio < 0.5):
-            #     mix_ratio = 0.5 - self.config.clip_thr
-            # label_mix = mix_ratio * torch.cat([D_src, D_src], dim=0) + (1.0-mix_ratio) *  torch.cat([D_tgt, D_tgt], dim=0)
-            # emb_mix =   mix_ratio * torch.cat([feats_x1, feats_x2], dim=0) + (1.0 - mix_ratio) * torch.cat([feats_x3, feats_x4], dim=0)
-            # label_pred_mix = self.netD(emb_mix, alpha)
-            # self.loss_m  = self.bce_fn(label_pred_mix.view(-1), label_mix.view(-1))
-            #############################################################################################
-            # intra-domain pixel-level mixup 
+            # inter-domain pixel-level mixup 
             #############################################################################################
             mix_ratio = np.random.beta(self.config.beta, self.config.beta)
             mix_ratio = round(mix_ratio, 2)
@@ -349,7 +316,6 @@ class Trainer(object):
             img_mix =   mix_ratio * torch.cat([x1, x2], dim=0) + (1.0 - mix_ratio) * torch.cat([x3, x4], dim=0)
             label_pred_mix = self.netD(self.netF(img_mix), alpha)
             self.loss_m  = self.bce_fn(label_pred_mix.view(-1), label_mix.view(-1))
-
             #############################################################################################
             # total loss
             #############################################################################################
@@ -458,9 +424,6 @@ class Trainer(object):
                 'test_results_srcc': self.test_results_srcc,
                 'test_results_plcc': self.test_results_plcc,
             }, model_name)
-            # model_name = '{}-{:0>5d}.npy'.format(self.save_prefix, epoch)
-            # model_name = os.path.join(self.config.p_path, model_name)
-            # np.save(model_name, self.dict2array(self.loss_vals))
         return 0
 
     def _load_checkpoint(self, ckpt):
@@ -480,48 +443,10 @@ class Trainer(object):
             self.netA.load_state_dict(checkpoint['netA_dict'])
 
             self.optimizer.load_state_dict(checkpoint['optimizer'])
-            # if self.initial_lr is not None:
-            #     for param_group in self.optimizer_F.param_groups:
-            #         param_group['initial_lr'] = self.initial_lr
-            #     for param_group in self.optimizer_Q.param_groups:
-            #         param_group['initial_lr'] = self.initial_lr
             print("[*] loaded checkpoint '{}' (epoch {})"
                   .format(ckpt, checkpoint['epoch']))
         else:
             print("[!] no checkpoint found at '{}'".format(ckpt))
-            
-    #####################################################################################################################
-    # nonlinear fitting
-    #####################################################################################################################
-    # def _four_params_func(self, x, eta1, eta2, eta3, eta4):
-    #     return (eta1-eta2)/(1+np.exp(-(x -eta3)/np.abs(eta4))) + eta2
-    
-    # def _nonlinearfit(self, xdata, ydata):
-    #     p0 = np.array([np.max(ydata), np.min(ydata), np.mean(xdata), 0.5])
-    #     popt, _= curve_fit(self._four_params_func, xdata, ydata, p0=p0, maxfev=500000)
-    #     return popt
-    
-    # def _mapping(self):
-    #     self.netF.eval()
-    #     self.netQ.eval()
-    #     for step, sample_batched in enumerate(self.mapping_loader, 0):
-    #         x, y = sample_batched['I'], sample_batched['mos']
-    #         x = Variable(x)
-    #         x = x.cuda()
-    #         feats, _ = self.netF(x)
-    #         y_bar,_,_,_ = self.netQ(feats)
-    #         if step == 0:
-    #             q_hat = y_bar.detach()
-    #             q_mos = y.detach()
-    #         else:
-    #             q_hat = torch.cat((q_hat, y_bar.detach()), dim=0)
-    #             q_mos = torch.cat((q_mos, y.detach()), dim=0)
-    #     q_hat = q_hat.cpu().data.numpy()
-    #     q_mos = q_mos.cpu().data.numpy()
-    #     popt = np.zeros((q_hat.shape[1], 4), dtype=float)
-    #     for i in range(q_hat.shape[1]):
-    #         popt[i, :] = self._nonlinearfit(q_hat[:,i], q_mos)
-    #     return popt
     
     def eval_single(self, netF, netQ, dataloader, popt=None):
         q_mos = []
@@ -534,13 +459,9 @@ class Trainer(object):
             y_bar,_,_,_ = netQ(feats)
             y_bar = y_bar.cpu().item()
             q_mos.append(y.item())
-            q_bar.append(y_bar)
-            # y_map = self._four_params_func(y_bar, popt[:,0], popt[:,1], popt[:,2], popt[:,3])
-            # q_map.append(np.mean(y_map))
-        
+            q_bar.append(y_bar)        
         srcc = scipy.stats.mstats.spearmanr(x=q_mos, y=q_bar)[0]
         plcc = scipy.stats.mstats.pearsonr(x=q_mos, y=q_bar)[0]
-        
         return srcc, plcc
             
     def eval(self):
