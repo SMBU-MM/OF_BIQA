@@ -32,12 +32,9 @@ def image_loader(image_name):
             else:
                 I = I.resize((int(height*384/width), 384), Image.BICUBIC)
     return I
-    return I
-
 
 def get_default_img_loader():
     return functools.partial(image_loader)
-
 
 class ImageDataset(Dataset):
     def __init__(self, csv_file,
@@ -103,29 +100,3 @@ class ImageDataset(Dataset):
 
     def __len__(self):
         return len(self.data.index)
-    
-if __name__ == '__main__':
-    from torch.utils.data import DataLoader
-    from torchvision import transforms
-    from Transformers import AdaptiveResize
-    train_transform = transforms.Compose([
-            #transforms.RandomRotation(3),
-            AdaptiveResize(512),
-            transforms.RandomCrop(384),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=(0.485, 0.456, 0.406),
-                                 std=(0.229, 0.224, 0.225))
-        ])
-    train_data = ImageDataset(csv_file='../gen_img/new_train_pair_0.07_1_thers0.5_binary.txt',
-                               img_dir='../gen_img',
-                               transform= train_transform,
-                               test=False)
-    train_loader = DataLoader(train_data,
-                              batch_size=1,
-                              shuffle=True,
-                              pin_memory=True,
-                              num_workers=8)
-    for step, sample_batched in enumerate(train_loader, 0):
-        print(sample_batched['y'])
-        print(sample_batched['y_binary'])
