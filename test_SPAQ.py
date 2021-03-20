@@ -3,6 +3,8 @@
 Created on Wed Mar  3 01:35:41 2021
 
 @author: Zhihua WANG
+
+Download the pretrained weights from https://mega.nz/folder/igAEnRDa#XScwb0Y6eBel5G43t6YdvQ
 """
 import torch
 import torch.nn as nn
