@@ -33,7 +33,7 @@ def parse_config():
     parser.add_argument("--koniq_set", type=str, default=r"../IQA_database/koniq-10k/")
     parser.add_argument("--spaq_set", type=str, default=r"../IQA_database/SPAQ/")
 
-    checkpoint_path = r"./checkpoints_d0.08_g0.08_m0.04_interdomain/"
+    checkpoint_path = r"./checkpoints/"
     parser.add_argument('--ckpt', default=checkpoint_path, type=str, help='name of the checkpoint to load')
     parser.add_argument('--ckpt_path', default= checkpoint_path +'checkpoint', type=str,
                         metavar='PATH', help='path to checkpoints')
@@ -67,7 +67,6 @@ def main(cfg):
     else:
         t.eval()
         
-
 if __name__ == "__main__":
     config = parse_config()
     print('config.weight_d', config.weight_d)
