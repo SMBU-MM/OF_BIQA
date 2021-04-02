@@ -53,11 +53,8 @@ class Trainer(object):
         
         self.train_batch_size = self.config.batch_size
         self.test_batch_size = 1
-
-        if self.config.voting == True:
-            train_txt = 'train_pair_koniq_voting.txt'
-        else:
-            train_txt = 'train_pair_koniq_novoting.txt'
+        
+        train_txt = 'train_pair_koniq.txt'
         self.train_batch_size = config.batch_size
         self.test_batch_size = 1
 
