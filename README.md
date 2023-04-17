@@ -14,7 +14,7 @@ You can run the Main.py for training and the test_SPAQ.py and test_KonIQ.py for 
 # Citation
 If you find the repository helpful in your resarch, please cite the following papers.
 ```sh
-@article{wang2023towards,
+@article{wang2023toward,
 title = "Toward a blind image quality evaluator in the wild by learning beyond human opinion scores", 
 author = "Zhihua Wang and Zhi-Ri Tang and Jianguo Zhang and Yuming Fang",  
 year = "2023",  
