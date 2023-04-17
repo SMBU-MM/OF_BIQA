@@ -9,7 +9,7 @@ fid = fopen('image_names.txt','w');
 count = 1;
 for img_idx=1:4744
     t0 = cputime;
-    path = 'E:\\domain_adaptation\\exploration_database_and_code\\pristine_images\\';
+    path = 'path/to/the/pristine images/of/waterloo exploration database';
     img = imread(strcat(path, num2str(img_idx,'%05d'),'.bmp'));
     for dist_com_type = 1:4
         if dist_com_type==1
