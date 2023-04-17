@@ -11,7 +11,7 @@ You can download the pre-trained weights adapting to [KonIQ-10k](https://drive.g
 # Train & Test
 You can run the Main.py for training
 
-## Citation
+# Citation
 If you find the repository helpful in your resarch, please cite the following papers.
 ```sh
 @article{wang2023towards,
