@@ -9,7 +9,7 @@ You can download the pre-trained weights adapting to [KonIQ-10k](https://drive.g
 3. Randomly sample image pairs and assign binary pseudo-labels.
 
 # Train & Test
-You can run the Main.py for training
+You can run the Main.py for training and run the test_SPAQ.py and test_KonIQ.py for testing
 
 # Citation
 If you find the repository helpful in your resarch, please cite the following papers.
