@@ -20,8 +20,3 @@ author = "Zhihua Wang and Zhi-Ri Tang and Jianguo Zhang and Yuming Fang",
 year = "2023",  
 volume = "137",  
 journal = "Pattern Recognition"}
-
-
-
-
-
