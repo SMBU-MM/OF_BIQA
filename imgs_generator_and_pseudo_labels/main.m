@@ -2,6 +2,7 @@ clear all
 close all
 clc
 warning off
+rng(0)
 %% distortions 
 dist_names = ["OE", "UE", "GN", "MB", "OF", "CA", "CC", "JPEG", "JP2K", "VG"];
 fid = fopen('image_names.txt','w');
